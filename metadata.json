@@ -1,0 +1,6 @@
+{
+  "name": "genericMed",
+  "description": "Multi-Tenant SaaS Platform for Online Generic Medicine Price Comparison, Dispensing Verification, and Purchase",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,137 @@
+import React, { useState } from 'react';
+import { AppView, CartItem, Medicine, PharmacyOffer } from './types';
+import { INITIAL_CART_ITEMS, MEDICINES_DATA, PHARMACY_OFFERS } from './data/mockData';
+import { NavigationHeader } from './components/NavigationHeader';
+import { CustomerHome } from './components/CustomerHome';
+import { DrugEquivalency } from './components/DrugEquivalency';
+import { CartRevalidation } from './components/CartRevalidation';
+import { PartnerPortal } from './components/PartnerPortal';
+import { SuperAdminSuite } from './components/SuperAdminSuite';
+import { DevConsole } from './components/DevConsole';
+import { ArchitecturePrd } from './components/ArchitecturePrd';
+
+export default function App() {
+  const [currentView, setCurrentView] = useState<AppView>('customer-search');
+  const [cartItems, setCartItems] = useState<CartItem[]>(INITIAL_CART_ITEMS);
+  const [selectedMedicineId, setSelectedMedicineId] = useState<string>('atorvastatin-calcium');
+
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleNavigateToDetail = (medicineId: string) => {
+    setSelectedMedicineId(medicineId);
+    setCurrentView('customer-drug-detail');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateToCart = () => {
+    setCurrentView('customer-cart');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleProceedToCart = (offer: PharmacyOffer) => {
+    setCurrentView('customer-cart');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAddToCart = (medicine: Medicine) => {
+    setCartItems((prev) => {
+      const existing = prev.find((item) => item.medicineId === medicine.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.medicineId === medicine.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        const newItem: CartItem = {
+          id: `cart-${medicine.id}`,
+          medicineId: medicine.id,
+          name: medicine.name,
+          strength: medicine.dosage,
+          format: 'Caplets',
+          countDescription: medicine.packageDescription,
+          brandEquivalent: medicine.brandName,
+          brandMSRP: medicine.brandPrice,
+          price: medicine.lowestPrice,
+          savings: medicine.savingsAmount,
+          savingsPercentage: medicine.savingsPercent,
+          quantity: 1,
+          doctorInfo: 'OTC Immediate Dispense',
+          npiNumber: 'N/A',
+          imageUrl: medicine.imageUrl,
+          ndc: medicine.ndc
+        };
+        return [...prev, newItem];
+      }
+    });
+  };
+
+  const handleUpdateQuantity = (id: string, delta: number) => {
+    setCartItems((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const newQty = item.quantity + delta;
+            return newQty > 0 ? { ...item, quantity: newQty } : null;
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  };
+
+  const handleCompleteCheckout = (total: number, orderId: string) => {
+    // Optionally trigger a notification or update partner order list
+  };
+
+  return (
+    <div className="min-h-screen bg-[#faf8ff] text-[#131b2e] flex flex-col selection:bg-[#00685f]/20">
+      {/* Top Universal View Switcher */}
+      <NavigationHeader
+        currentView={currentView}
+        onSelectView={(view) => {
+          setCurrentView(view);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        cartCount={cartCount}
+        partnerOrderCount={14}
+      />
+
+      {/* View Render */}
+      <div className="flex-1 w-full">
+        {currentView === 'customer-search' && (
+          <CustomerHome
+            onNavigateToDetail={handleNavigateToDetail}
+            onNavigateToCart={handleNavigateToCart}
+            onAddToCart={handleAddToCart}
+            cartCount={cartCount}
+          />
+        )}
+
+        {currentView === 'customer-drug-detail' && (
+          <DrugEquivalency
+            onBack={() => setCurrentView('customer-search')}
+            onProceedToCart={handleProceedToCart}
+          />
+        )}
+
+        {currentView === 'customer-cart' && (
+          <CartRevalidation
+            cartItems={cartItems}
+            onBack={() => setCurrentView('customer-drug-detail')}
+            onUpdateQuantity={handleUpdateQuantity}
+            onCompleteCheckout={handleCompleteCheckout}
+          />
+        )}
+
+        {currentView === 'partner-portal' && <PartnerPortal />}
+
+        {currentView === 'super-admin' && <SuperAdminSuite />}
+
+        {currentView === 'dev-console' && <DevConsole />}
+
+        {currentView === 'system-architecture' && <ArchitecturePrd />}
+      </div>
+    </div>
+  );
+}

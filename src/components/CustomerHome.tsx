@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { MEDICINES_DATA } from '../data/mockData';
-import { Medicine } from '../types';
+import { Medicine, UserProfile } from '../types';
 
 interface CustomerHomeProps {
   onNavigateToDetail: (medicineId: string) => void;
   onNavigateToCart: () => void;
   onAddToCart: (medicine: Medicine) => void;
   cartCount: number;
+  currentUser?: UserProfile | null;
+  onOpenAuth?: () => void;
 }
 
 export const CustomerHome: React.FC<CustomerHomeProps> = ({
@@ -14,6 +16,8 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
   onNavigateToCart,
   onAddToCart,
   cartCount,
+  currentUser,
+  onOpenAuth,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All Generic Pairs');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -83,9 +87,21 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
                   {cartCount}
                 </span>
               </button>
-              <div className="w-8 h-8 rounded-full bg-[#00685f] flex items-center justify-center ml-1 shadow-sm">
-                <span className="material-symbols-outlined text-white text-[18px]">person</span>
-              </div>
+              <button
+                onClick={onOpenAuth}
+                title={currentUser ? `Signed in as ${currentUser.name} (${currentUser.roleTitle})` : 'Sign in / Register'}
+                className="w-8 h-8 rounded-full bg-[#00685f] flex items-center justify-center ml-1 shadow-sm overflow-hidden hover:ring-2 hover:ring-[#00685f]/50 transition-all cursor-pointer"
+              >
+                {currentUser?.avatarUrl ? (
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="material-symbols-outlined text-white text-[18px]">person</span>
+                )}
+              </button>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppView, CartItem, Medicine, PharmacyOffer } from './types';
+import { AppView, CartItem, Medicine, PharmacyOffer, UserProfile } from './types';
 import { INITIAL_CART_ITEMS, MEDICINES_DATA, PHARMACY_OFFERS } from './data/mockData';
 import { NavigationHeader } from './components/NavigationHeader';
 import { CustomerHome } from './components/CustomerHome';
@@ -9,11 +9,24 @@ import { PartnerPortal } from './components/PartnerPortal';
 import { SuperAdminSuite } from './components/SuperAdminSuite';
 import { DevConsole } from './components/DevConsole';
 import { ArchitecturePrd } from './components/ArchitecturePrd';
+import { AuthScreen } from './components/AuthScreen';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('customer-search');
   const [cartItems, setCartItems] = useState<CartItem[]>(INITIAL_CART_ITEMS);
   const [selectedMedicineId, setSelectedMedicineId] = useState<string>('atorvastatin-calcium');
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>({
+    id: 'usr_849201',
+    name: 'Sarah Chen',
+    email: 'sarah.chen@healthbridge.demo',
+    role: 'patient',
+    roleTitle: 'Verified Patient',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    orgName: 'Brooklyn Heights Network',
+    zipCode: '11201',
+    insurancePreference: 'Cash-Pay Discount',
+    twoFactorEnabled: false
+  });
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -95,6 +108,8 @@ export default function App() {
         }}
         cartCount={cartCount}
         partnerOrderCount={14}
+        currentUser={currentUser}
+        onLogout={() => setCurrentUser(null)}
       />
 
       {/* View Render */}
@@ -105,6 +120,8 @@ export default function App() {
             onNavigateToCart={handleNavigateToCart}
             onAddToCart={handleAddToCart}
             cartCount={cartCount}
+            currentUser={currentUser}
+            onOpenAuth={() => setCurrentView('auth')}
           />
         )}
 
@@ -131,6 +148,22 @@ export default function App() {
         {currentView === 'dev-console' && <DevConsole />}
 
         {currentView === 'system-architecture' && <ArchitecturePrd />}
+
+        {currentView === 'auth' && (
+          <AuthScreen
+            currentUser={currentUser}
+            onLogin={(user, targetView) => {
+              setCurrentUser(user);
+              if (targetView) {
+                setCurrentView(targetView);
+              } else {
+                setCurrentView('customer-search');
+              }
+            }}
+            onLogout={() => setCurrentUser(null)}
+            onCancel={() => setCurrentView('customer-search')}
+          />
+        )}
       </div>
     </div>
   );

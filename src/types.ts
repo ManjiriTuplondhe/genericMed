@@ -5,7 +5,23 @@ export type AppView =
   | 'partner-portal' 
   | 'super-admin' 
   | 'dev-console'
-  | 'system-architecture';
+  | 'system-architecture'
+  | 'auth';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: 'patient' | 'pharmacist' | 'developer' | 'superadmin';
+  roleTitle: string;
+  avatarUrl?: string;
+  phone?: string;
+  orgName?: string;
+  deaOrNpi?: string;
+  zipCode?: string;
+  insurancePreference?: 'Cash-Pay Discount' | 'Commercial Insurance' | 'Medicare / Medicaid';
+  twoFactorEnabled?: boolean;
+}
 
 export interface Medicine {
   id: string;

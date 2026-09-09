@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MEDICINES_DATA } from '../data/mockData';
 import { Medicine, UserProfile } from '../types';
+import { api } from '../services/api';
 
 interface CustomerHomeProps {
   onNavigateToDetail: (medicineId: string) => void;
@@ -19,11 +20,15 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
   currentUser,
   onOpenAuth,
 }) => {
+  const [medicines, setMedicines] = useState<Medicine[]>(MEDICINES_DATA);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All Generic Pairs');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [isAiSearching, setIsAiSearching] = useState<boolean>(false);
+  const [aiSearchSummary, setAiSearchSummary] = useState<string | null>(null);
 
   const categories = [
     { name: 'All Generic Pairs', icon: 'all_inclusive', color: 'text-primary' },
@@ -34,7 +39,42 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
     { name: 'Pain Relief', icon: 'healing', color: 'text-[#00855b]' },
   ];
 
-  const filteredMedicines = MEDICINES_DATA.filter((med) => {
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    api.getMedicines(searchQuery, selectedCategory)
+      .then((data) => {
+        if (isMounted) {
+          setMedicines(data);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCategory, searchQuery]);
+
+  const handleAiSmartSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsAiSearching(true);
+    setAiSearchSummary(null);
+    try {
+      const res = await api.searchWithAi(searchQuery);
+      if (res && res.medicines) {
+        setMedicines(res.medicines);
+        setAiSearchSummary(res.summary);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsAiSearching(false);
+    }
+  };
+
+  const filteredMedicines = medicines.filter((med) => {
     const matchesCategory =
       selectedCategory === 'All Generic Pairs' || med.category.toLowerCase() === selectedCategory.toLowerCase();
     const matchesQuery =
@@ -174,6 +214,20 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
             )}
             <div className="flex items-center gap-1.5 shrink-0 pl-1">
               <button
+                aria-label="Gemini AI Smart Search"
+                onClick={handleAiSmartSearch}
+                disabled={isAiSearching || !searchQuery.trim()}
+                className={`h-8 px-2.5 rounded-lg flex items-center gap-1 text-[11px] font-bold transition-colors ${
+                  isAiSearching
+                    ? 'bg-[#eaedff] text-gray-400 animate-pulse'
+                    : 'bg-[#6ffbbe]/30 text-[#00685f] hover:bg-[#6ffbbe]/50'
+                }`}
+                title="Search with Gemini AI clinical reasoning"
+              >
+                <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+                <span>{isAiSearching ? 'Thinking...' : 'AI'}</span>
+              </button>
+              <button
                 aria-label="Scan medicine barcode"
                 onClick={() => {
                   setSearchQuery('Atorvastatin');
@@ -193,6 +247,22 @@ export const CustomerHome: React.FC<CustomerHomeProps> = ({
               </button>
             </div>
           </div>
+
+          {/* AI Clinical Search Summary Card if available */}
+          {aiSearchSummary && (
+            <div className="bg-[#f2fbf9] border border-[#89f5e7] p-2.5 rounded-xl flex items-start gap-2 text-[12px] text-[#004f47]">
+              <span className="material-symbols-outlined text-[#00685f] text-[18px] shrink-0 mt-0.5">neurology</span>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[11px] text-[#00685f] uppercase tracking-wider">Gemini Clinical Insight</span>
+                  <button onClick={() => setAiSearchSummary(null)} className="text-gray-400 hover:text-gray-600">
+                    <span className="material-symbols-outlined text-[14px]">close</span>
+                  </button>
+                </div>
+                <p className="mt-0.5 leading-relaxed">{aiSearchSummary}</p>
+              </div>
+            </div>
+          )}
 
           {/* Condition Filter Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto py-1 scroll-smooth no-scrollbar">

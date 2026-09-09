@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PARTNER_ORDERS_DATA } from '../data/mockData';
 import { PartnerOrder } from '../types';
+import { api } from '../services/api';
 
 interface PartnerPortalProps {
   onOrderProcessed?: () => void;
@@ -21,34 +22,65 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = () => {
   const [sealedOrders, setSealedOrders] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const fetchOrders = () => {
+    api.getPartnerOrders()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setOrders(data);
+          if (!data.some((o) => o.orderId === selectedOrderId)) {
+            setSelectedOrderId(data[0].orderId);
+          }
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const selectedOrder = orders.find((o) => o.orderId === selectedOrderId) || orders[0];
+  const selectedOrder = orders.find((o) => o.orderId === selectedOrderId) || orders[0] || PARTNER_ORDERS_DATA[0];
   const isOrderSealed = sealedOrders.includes(selectedOrder.orderId);
 
-  const handleAuthorizeSeal = () => {
+  const handleAuthorizeSeal = async () => {
     if (!checkSeal) {
       alert('Please check "Affix Lead Pharmacist Physical Tamper-Evident Seal" before authorizing dispense.');
       return;
     }
     setSealedOrders((prev) => [...prev, selectedOrder.orderId]);
     showToast(`Order #${selectedOrder.orderId} Authorized & Sealed! Staged for Driver Marcus B.`);
+    try {
+      await api.updatePartnerOrderStatus(selectedOrder.orderId, 'Packed & Staged');
+      fetchOrders();
+    } catch {
+      // Fallback
+    }
   };
 
   const handlePrintLabels = (orderId: string) => {
     showToast(`Printing DEA/NPI Rx compliance labels for #${orderId} on Zebra thermal printer.`);
   };
 
-  const handleAcceptOrder = (orderId: string) => {
+  const handleAcceptOrder = async (orderId: string) => {
     setOrders((prev) =>
       prev.map((o) =>
         o.orderId === orderId ? { ...o, status: 'Needs Dispensing' } : o
       )
     );
     showToast(`Order #${orderId} claimed and moved to active dispensing queue.`);
+    try {
+      await api.updatePartnerOrderStatus(orderId, 'Needs Dispensing');
+      fetchOrders();
+    } catch {
+      // Fallback
+    }
   };
 
   const filteredOrders = orders.filter((order) => {

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TENANT_ORGS_DATA, AUDIT_LOGS_DATA } from '../data/mockData';
 import { TenantOrg, Sec18AuditLog } from '../types';
+import { api } from '../services/api';
 
 export const SuperAdminSuite: React.FC = () => {
   const [tenants, setTenants] = useState<TenantOrg[]>(TENANT_ORGS_DATA);
@@ -9,6 +10,21 @@ export const SuperAdminSuite: React.FC = () => {
   const [takeRateInput, setTakeRateInput] = useState<string>('12.0');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isProvisionModalOpen, setIsProvisionModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([api.getTenants(), api.getAuditLogs()])
+      .then(([tData, aData]) => {
+        if (isMounted) {
+          if (tData && tData.length > 0) setTenants(tData);
+          if (aData && aData.length > 0) setAuditLogs(aData);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // New Tenant Form State
   const [newOrgName, setNewOrgName] = useState<string>('');

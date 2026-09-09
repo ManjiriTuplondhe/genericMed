@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppView, CartItem, Medicine, PharmacyOffer, UserProfile } from './types';
-import { INITIAL_CART_ITEMS, MEDICINES_DATA, PHARMACY_OFFERS } from './data/mockData';
+import { INITIAL_CART_ITEMS } from './data/mockData';
+import { api } from './services/api';
 import { NavigationHeader } from './components/NavigationHeader';
 import { CustomerHome } from './components/CustomerHome';
 import { DrugEquivalency } from './components/DrugEquivalency';
@@ -13,7 +14,17 @@ import { AuthScreen } from './components/AuthScreen';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('customer-search');
-  const [cartItems, setCartItems] = useState<CartItem[]>(INITIAL_CART_ITEMS);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('gmed_cart_items');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return INITIAL_CART_ITEMS;
+      }
+    }
+    return INITIAL_CART_ITEMS;
+  });
   const [selectedMedicineId, setSelectedMedicineId] = useState<string>('atorvastatin-calcium');
   const [currentUser, setCurrentUser] = useState<UserProfile | null>({
     id: 'usr_849201',
@@ -27,6 +38,23 @@ export default function App() {
     insurancePreference: 'Cash-Pay Discount',
     twoFactorEnabled: false
   });
+
+  useEffect(() => {
+    localStorage.setItem('gmed_cart_items', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  useEffect(() => {
+    api.getMe().then((user) => {
+      if (user) {
+        setCurrentUser(user);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleLogout = () => {
+    api.logout();
+    setCurrentUser(null);
+  };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -109,7 +137,7 @@ export default function App() {
         cartCount={cartCount}
         partnerOrderCount={14}
         currentUser={currentUser}
-        onLogout={() => setCurrentUser(null)}
+        onLogout={handleLogout}
       />
 
       {/* View Render */}
@@ -160,7 +188,7 @@ export default function App() {
                 setCurrentView('customer-search');
               }
             }}
-            onLogout={() => setCurrentUser(null)}
+            onLogout={handleLogout}
             onCancel={() => setCurrentView('customer-search')}
           />
         )}

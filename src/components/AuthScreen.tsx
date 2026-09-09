@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, AppView } from '../types';
+import { api } from '../services/api';
 
 interface AuthScreenProps {
   currentUser: UserProfile | null;
@@ -149,7 +150,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   ][passwordScore];
 
   // Handle Login Submission
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim()) {
       alert('Please provide an email address.');
@@ -157,7 +158,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     }
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const demo = demoAccounts[selectedRole];
+      const res = await api.login({
+        email: loginEmail,
+        password: loginPassword,
+        role: selectedRole,
+        quickLogin: true
+      });
+      setIsLoading(false);
+      onLogin(res.user, demo.target);
+      showToast(`Welcome back, ${res.user.name}! Authenticated with JWT token.`);
+    } catch {
       setIsLoading(false);
       const demo = demoAccounts[selectedRole];
       const user: UserProfile = {
@@ -174,11 +186,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
       onLogin(user, demo.target);
       showToast(`Welcome back, ${user.name}! Authenticated as ${user.roleTitle}`);
-    }, 600);
+    }
   };
 
   // Handle Register Submission
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regFullName.trim() || !regEmail.trim() || !regPassword) {
       alert('Please fill in all required fields.');
@@ -194,43 +206,47 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     }
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await api.register({
+        name: regFullName,
+        email: regEmail,
+        password: regPassword,
+        role: selectedRole,
+        orgName: selectedRole === 'pharmacist' ? pharmacyName : selectedRole === 'developer' ? devOrgName : 'genericMed Network',
+        zipCode: patientZip
+      });
+      setIsLoading(false);
+      onLogin(res.user, demoAccounts[selectedRole].target);
+      showToast(`Account registered and authenticated: ${res.user.name}`);
+    } catch {
       setIsLoading(false);
       let roleTitle = 'Registered Patient';
       let org = 'Independent Patient';
-      let dea = undefined;
-
       if (selectedRole === 'pharmacist') {
-        roleTitle = 'Accredited Pharmacist';
+        roleTitle = 'Licensed Pharmacist';
         org = pharmacyName;
-        dea = `${deaNumber} / NPI: ${npiNumber}`;
       } else if (selectedRole === 'developer') {
-        roleTitle = 'API Developer Partner';
+        roleTitle = 'API Developer';
         org = devOrgName;
       } else if (selectedRole === 'superadmin') {
-        roleTitle = 'Platform Security Operator';
-        org = 'genericMed Orchestrator';
+        roleTitle = 'Platform Admin';
+        org = 'genericMed Root';
       }
 
-      const newUser: UserProfile = {
+      const user: UserProfile = {
         id: `usr_${Math.floor(100000 + Math.random() * 900000)}`,
         name: regFullName,
         email: regEmail,
         role: selectedRole,
         roleTitle,
-        avatarUrl: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
-        phone: regPhone,
         orgName: org,
-        deaOrNpi: dea,
         zipCode: patientZip,
-        insurancePreference: insurancePref,
         twoFactorEnabled: enable2FA
       };
 
-      const demo = demoAccounts[selectedRole];
-      onLogin(newUser, demo.target);
-      showToast(`Account successfully created for ${newUser.name}!`);
-    }, 700);
+      onLogin(user, demoAccounts[selectedRole].target);
+      showToast(`Account created! Welcome to genericMed, ${user.name}`);
+    }
   };
 
   const handleSimulateSSO = (provider: string) => {

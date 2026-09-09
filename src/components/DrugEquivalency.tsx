@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PHARMACY_OFFERS } from '../data/mockData';
 import { PharmacyOffer } from '../types';
+import { api } from '../services/api';
 
 interface DrugEquivalencyProps {
   onBack: () => void;
@@ -15,6 +16,15 @@ export const DrugEquivalency: React.FC<DrugEquivalencyProps> = ({
   const [inStockOnly, setInStockOnly] = useState<boolean>(true);
   const [activeSort, setActiveSort] = useState<'lowest' | 'fastest' | 'rating' | 'distance'>('lowest');
   const [selectedOfferId, setSelectedOfferId] = useState<string>('offer-carepoint');
+  const [offersList, setOffersList] = useState<PharmacyOffer[]>(PHARMACY_OFFERS);
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    clinicalSummary: string;
+    hasWarnings: boolean;
+    interactions: string[];
+    sourceCitations: string[];
+    disclaimer: string;
+  } | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
 
   // Dosage multipliers
   const dosageConfig = {
@@ -25,8 +35,37 @@ export const DrugEquivalency: React.FC<DrugEquivalencyProps> = ({
 
   const currentDosage = dosageConfig[selectedDosage];
 
+  useEffect(() => {
+    let isMounted = true;
+    api.getOffers('atorvastatin-calcium')
+      .then((data) => {
+        if (isMounted && data.length > 0) {
+          setOffersList(data);
+          setSelectedOfferId(data[0].id);
+        }
+      })
+      .catch(() => {});
+
+    // Run clinical AI analysis for Atorvastatin
+    setIsAiLoading(true);
+    api.checkDrugInteractions('Atorvastatin Calcium 20mg', 'Standard adult lipid profile')
+      .then((res) => {
+        if (isMounted && res) {
+          setAiAnalysis(res);
+          setIsAiLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsAiLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Filter & sort offers
-  let offers = [...PHARMACY_OFFERS];
+  let offers = [...offersList];
   if (inStockOnly) {
     offers = offers.filter((o) => o.inStock);
   }
@@ -39,7 +78,7 @@ export const DrugEquivalency: React.FC<DrugEquivalencyProps> = ({
     return 0;
   });
 
-  const activeOffer = PHARMACY_OFFERS.find((o) => o.id === selectedOfferId) || PHARMACY_OFFERS[0];
+  const activeOffer = offersList.find((o) => o.id === selectedOfferId) || offersList[0] || PHARMACY_OFFERS[0];
   const dynamicPrice = (activeOffer.price * currentDosage.priceMultiplier).toFixed(2);
   const dynamicSavings = (currentDosage.benchmark - parseFloat(dynamicPrice)).toFixed(2);
 
@@ -156,6 +195,34 @@ export const DrugEquivalency: React.FC<DrugEquivalencyProps> = ({
                 );
               })}
             </div>
+          </div>
+
+          {/* Gemini AI Clinical Interaction Card */}
+          <div className="mt-1 bg-[#f2fbf9] border border-[#89f5e7] rounded-xl p-3 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[#00685f] text-[18px]">neurology</span>
+                <span className="font-bold text-[12px] text-[#004f47]">Gemini AI Drug Safety Check</span>
+              </div>
+              <span className="font-badge-micro text-[9px] bg-[#00685f]/15 text-[#00685f] font-bold px-1.5 py-0.5 rounded">
+                FDA ORANGE BOOK
+              </span>
+            </div>
+            {isAiLoading ? (
+              <p className="font-body-sm text-[11px] text-[#004f47] animate-pulse">
+                Running clinical interaction & bioequivalence analysis...
+              </p>
+            ) : aiAnalysis ? (
+              <div className="flex flex-col gap-1 text-[11px] text-[#004f47] leading-relaxed">
+                <p>{aiAnalysis.clinicalSummary}</p>
+                {aiAnalysis.interactions.length > 0 && (
+                  <div className="mt-1 pt-1 border-t border-[#89f5e7]/60 flex items-start gap-1">
+                    <span className="material-symbols-outlined text-[#00855b] text-[14px] shrink-0 mt-0.5">check_circle</span>
+                    <span>{aiAnalysis.interactions[0]}</span>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         </section>
 

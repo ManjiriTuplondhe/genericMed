@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_CREDENTIALS_DATA, WEBHOOK_EVENTS_DATA } from '../data/mockData';
 import { ApiCredential, WebhookEvent } from '../types';
+import { api } from '../services/api';
 
 export const DevConsole: React.FC = () => {
   const [credentials, setCredentials] = useState<ApiCredential[]>(API_CREDENTIALS_DATA);
@@ -8,6 +9,21 @@ export const DevConsole: React.FC = () => {
   const [environment, setEnvironment] = useState<'live' | 'sandbox'>('live');
   const [selectedLanguage, setSelectedLanguage] = useState<'curl' | 'python' | 'nodejs'>('curl');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([api.getApiCredentials(), api.getWebhookEvents()])
+      .then(([cData, wData]) => {
+        if (isMounted) {
+          if (cData && cData.length > 0) setCredentials(cData);
+          if (wData && wData.length > 0) setWebhookEvents(wData);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Playground state
   const [requestPayload, setRequestPayload] = useState<string>(

@@ -166,7 +166,26 @@ npm run build
 
 ---
 
-## API Overview
+## Deployment on Render / Cloud Platforms
+
+### 1. Deploying Backend as a Web Service (Node.js)
+- **Root Directory**: `backend` (or root)
+- **Environment**: `Node`
+- **Build Command**: `npm install && npm run build`
+- **Start Command**: `npm start`
+- **Environment Variables**:
+  - `PORT`: `5000` (or leave default assigned by Render)
+  - `MONGODB_URI`: `mongodb+srv://manjirituplondhe21_db_user:hm0klDAdaNMaTSOe@cluster0.m6ffxwo.mongodb.net/genericmed?appName=Cluster0`
+  - `JWT_SECRET`: your secure JWT secret key
+  - `NODE_ENV`: `production`
+
+### 2. Deploying Frontend as a Static Site
+- **Root Directory**: `frontend`
+- **Build Command**: `npm install && npm run build`
+- **Publish Directory**: `dist`
+- **Environment Variables**:
+  - `VITE_API_URL`: Your deployed backend service URL (e.g., `https://genericmed-backend.onrender.com/api`)
+  - `VITE_BACKEND_URL`: `https://genericmed-backend.onrender.com`
 
 | Method | Endpoint | Description |
 |---|---|---|

@@ -22,7 +22,12 @@ import marketplaceRouter from './routes/marketplace';
 import regionsRouter from './routes/regions';
 import fraudRouter from './routes/fraud';
 
+import { connectMongoDB, isMongoConnected } from './config/mongo';
+
 dotenv.config();
+
+// Initialize MongoDB Atlas connection
+connectMongoDB();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +47,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'HEALTHY',
     service: 'genericMed-backend',
+    database: isMongoConnected() ? 'MongoDB Atlas (Connected)' : 'In-Memory Store (Active)',
     version: '0.4.0',
     timestamp: new Date().toISOString(),
     uptimeSeconds: Math.floor(process.uptime())

@@ -1,0 +1,19 @@
+{
+  "name": "genericMed — Generic Medicine Comparison & Dispensing",
+  "short_name": "genericMed",
+  "description": "Multi-tenant SaaS platform for FDA generic medicine comparison, real-time dispensing verification, and escrow checkout.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf8ff",
+  "theme_color": "#006a6a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["medical", "health", "shopping"]
+}

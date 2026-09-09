@@ -24,6 +24,92 @@ _Changes staged for the next version release._
 
 ---
 
+## [0.5.0] — 2026-09-09
+
+> **Milestone:** Phase 4 — Enterprise & Marketplace
+>
+> Implementation of the Pharmacy Management System (PMS) Integration Marketplace with bidirectional sync, Multi-Drug CYP450 Clinical Interaction Matrix, 24/7 Patient Clinical Support Chatbot (Gemini AI), Multi-Region Database Replication & Failover Simulator, and Real-Time Fraud & DEA Velocity Anomaly Engine.
+
+### Added
+
+#### Backend Routes & Database Methods (`server/`)
+- `server/routes/marketplace.ts` — `GET /api/marketplace/adapters` (lists QS/1, PioneerRx, Liberty Software, Rx30, Epic Willow connectors), `POST /api/marketplace/adapters/:id/sync` (on-demand stock & dispensing sync), `POST /api/marketplace/adapters/:id/configure` (saves connection URLs & mTLS/OAuth2 auth).
+- `server/routes/regions.ts` — `GET /api/regions/status` (multi-region cluster topology across 4 regions) and `POST /api/regions/simulate-failover` (zero-downtime disaster recovery failover with SEC-18 audit log recording).
+- `server/routes/fraud.ts` — `GET /api/fraud/alerts` (active velocity alerts) and `POST /api/fraud/evaluate` (real-time risk scoring, DEA Schedule II–V velocity, and NPI surge surveillance).
+- `server/routes/ai.ts` — `POST /api/ai/multi-drug-check` (multi-drug pairwise CYP450 enzyme conflict detection) and `POST /api/ai/patient-chat` (24/7 clinical AI assistant conversation).
+- `server/test-phase4.ts` — Automated end-to-end verification suite testing PMS sync, multi-drug matrix, AI chat, multi-region failover, and fraud detection (7/7 tests passing).
+
+#### Frontend Components & Features
+- `src/components/PharmacyMarketplaceModal.tsx` — Pharmacy PMS marketplace modal allowing partners and admins to browse, configure, and trigger real-time stock sync across 5 PMS platforms.
+- `src/components/MultiDrugInteractionModal.tsx` — Interactive multi-drug selector and clinical matrix checker displaying overall risk ratings, pairwise findings, CYP enzyme pathways, and CPIC clinical recommendations.
+- `src/components/PatientClinicalAssistantModal.tsx` — 24/7 AI-powered floating drawer with conversational prescription help, action shortcuts (View Drug, Check Interactions, Call Pharmacist), and FDA bioequivalence explanations.
+- `src/components/MultiRegionStatusModal.tsx` — Multi-region cluster health dashboard displaying replication lag gauges (sub-15ms North America), global throughput, and one-click disaster recovery failover simulation.
+
+### Changed
+- `src/types.ts` — Added `PharmacyMarketplaceAdapter`, `MultiDrugInteractionCheck`, `MultiRegionNode`, `FraudDetectionAlert`, `AiChatMessage` interfaces.
+- `src/services/api.ts` — Added all 9 Phase 4 client methods with resilient offline fallback data.
+- `src/components/NavigationHeader.tsx` & `src/App.tsx` — Integrated quick trigger buttons ("AI Assistant", "Drug Matrix", "PMS Marketplace", "Regions") and mounted all Phase 4 modal workflows.
+
+---
+
+## [0.4.0] — 2026-09-09
+
+> **Milestone:** Phase 3 — Scale, Polish & Compliance
+>
+> Implementation of Real-Time Admin & Partner Analytics Dashboard with interactive charts, 4-step Tenant Self-Serve Onboarding Wizard with DEA & NPI validation and isolated database shard provisioning, Progressive Web App (PWA) with Service Worker offline caching, and Dark Mode theme toggle with WCAG 2.1 AA accessibility.
+
+### Added
+
+#### Backend Routes & Database Methods (`server/`)
+- `server/routes/admin.ts` — `GET /api/admin/analytics` (supports `7d`, `30d`, `90d` timeframe aggregations, daily time-series, fulfillment speed distribution, category volume, and fulfiller rankings) and `POST /api/admin/tenants/onboard` (provisions tenant shards, validates credentials, and creates immutable SEC-18 registration certificates).
+- `server/db.ts` — `getPlatformAnalytics()` engine and `onboardTenant()` isolated shard allocation and audit hashing.
+- `server/test-phase3.ts` — Automated verification suite covering 30d/7d analytics, tenant onboarding, SEC-18 certificates, and audit logs (5/5 tests passing).
+
+#### Frontend Components & Features
+- `src/components/AdminAnalyticsDashboard.tsx` — Real-time analytics dashboard with interactive SVG GMV & patient savings time-series area charts, SLA fulfillment speed histograms, medicine category share bars, and CSV report export.
+- `src/components/TenantOnboardingModal.tsx` — 4-step pharmacy partner registration wizard: (1) Pharmacy info & DEA/NPI validation, (2) Tier selection & take-rate agreement, (3) Isolated database shard allocation, and (4) SEC-18 registration certificate issuance.
+- `public/manifest.json` & `public/favicon.svg` — Web App Manifest for PWA installation with standalone display mode and `#006a6a` theme coloring.
+- `public/sw.js` — Service Worker implementing cache-first strategy for static assets and network-first with offline fallback caching for `/api/` medicine catalog.
+
+### Changed
+- `src/components/SuperAdminSuite.tsx` — Redesigned with sub-navigation tabs (`analytics`, `tenants`, `audit`) and connected `TenantOnboardingModal`.
+- `src/components/NavigationHeader.tsx` & `src/App.tsx` — Added Dark Mode theme switcher (Light / Dark) with `localStorage` synchronization (`gmed_theme`) and system preference detection.
+- `src/index.css` — Added dark mode theme tokens (`.dark body`, surface colors) and `:focus-visible` accessibility rings meeting WCAG 2.1 AA.
+- `src/types.ts` — Added `PlatformAnalytics`, `AnalyticsTimeSeriesPoint`, `CategoryVolumeStat`, `TenantOnboardingPayload` types.
+- `src/services/api.ts` — Added `getPlatformAnalytics()` and `onboardTenant()` client methods with resilient offline fallback calculations.
+
+---
+
+## [0.3.0] — 2026-09-09
+
+> **Milestone:** Phase 2 — Production Features
+>
+> Implementation of Escrow Payment Processing (Credit Card, Apple Pay, FSA/HSA Debit), Multimodal Prescription OCR & NPI Verification, In-App Notification Center with live SLA Alerts, Patient Live Order Tracking & OTP Verification, and Insurance Eligibility & Copay Comparison.
+
+### Added
+
+#### Backend Routes & Database Methods (`server/`)
+- `server/routes/payments.ts` — `POST /api/payments/process` (holds payment in escrow), `GET /api/payments/receipt/:orderId` (generates SEC-18 QR verified receipts), and `POST /api/payments/refund` (releases escrow and cancels order).
+- `server/routes/prescriptions.ts` — `POST /api/prescriptions/ocr-scan` (OCR parsing & bioequivalent generic matcher), `GET /api/prescriptions/npi-verify/:npi` (registry verification), and `GET /api/prescriptions` (retrieval).
+- `server/routes/notifications.ts` — `GET /api/notifications` (role/user targeted alerts), `PATCH /api/notifications/:id/read`, and `POST /api/notifications/broadcast`.
+- `server/routes/insurance.ts` — `POST /api/insurance/verify` (real-time deductible & eligibility verification) and `POST /api/insurance/copay-calculator` (copay vs cash price comparison).
+- `server/test-phase2.ts` — Automated verification suite testing payment escrow, receipt generation, NPI validation, notification center, copay calculations, and order refund (6/6 tests passing).
+
+#### Frontend Components & Features
+- `src/components/PrescriptionUploadModal.tsx` — Gemini Multimodal Vision Rx scanner modal with drag-and-drop file upload, OCR progress meter, prescriber NPI registry status badge, and instant generic savings match.
+- `src/components/InsuranceCalculatorModal.tsx` — Instant brand copay vs generic copay vs genericMed cash price comparison with deductible tracker and plan selector (Commercial PPO, High-Deductible HSA, Medicare Part D, Medicaid).
+- `src/components/NotificationCenterModal.tsx` — Real-time notification drawer with unread counter, badge types (price drops, refill reminders, SLA alerts), and one-click mark read actions.
+- `src/components/PatientOrderHistory.tsx` — Patient live tracking dashboard with 5-stage dispatch timeline (Placed → TeleRx Verified → Dispensing → Courier Transit → PIN Delivered), courier ETA map status, tamper-evident PIN OTP display, and downloadable SEC-18 receipt viewer.
+
+### Changed
+- `src/types.ts` — Added `PaymentIntent`, `ReceiptData`, `PrescriptionRecord`, `InAppNotification`, `InsuranceEligibility` types and added `patient-orders` to `AppView`.
+- `src/services/api.ts` — Added all 10 Phase 2 client methods with reliable offline fallbacks.
+- `src/components/NavigationHeader.tsx` — Added "4. Track Orders" tab, "Scan Rx" quick button, and live notification bell badge.
+- `src/components/CartRevalidation.tsx` — Integrated payment method selector (Card, Apple Pay, FSA/HSA), escrow hold badge, payment processing, and tracking modal handoff.
+- `src/components/CustomerHome.tsx` — Connected `PrescriptionUploadModal` and `InsuranceCalculatorModal`.
+- `src/App.tsx` — Connected `patient-orders` view, unread notification counter, and modal state management.
+
+
 ## [0.2.0] — 2026-09-09
 
 > **Milestone:** Phase 1 — Backend Foundation
